@@ -4,7 +4,6 @@ import com.feed_the_beast.ftblib.lib.data.ForgePlayer;
 import com.feed_the_beast.ftblib.lib.data.ForgeTeam;
 import com.feed_the_beast.ftblib.lib.data.Universe;
 import com.google.inject.Inject;
-import net.minecraft.util.text.ITextComponent;
 import org.slf4j.Logger;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.CommandException;
@@ -91,11 +90,10 @@ public class FtbExtraUtilities {
                 .build();
 
         CommandSpec main = CommandSpec.builder()
-                .arguments(GenericArguments.string(Text.of("teamname")))
                 .child(getId, "getid", "id")
                 .child(getPlayers, "getplayers", "players")
                 //.executor(new main())
                 .build();
-        Sponge.getCommandManager().register(this, main, "teams");
+        Sponge.getCommandManager().register(this, main, "ftbteams");
     }
 }
