@@ -16,6 +16,7 @@ dependencies {
     compile 'org.spongepowered:spongeapi:7.0.0'
     compile files("libs/FTBLib-5.4.3.126.jar")
     compile files("libs/FTBUtilities-5.4.0.100.jar")
+    compile files("libs/forgeSrc-1.12.2-14.23.5.2838-PROJECT(SpongeForge).jar")
 }
 
 sponge.plugin.id = pluginId
