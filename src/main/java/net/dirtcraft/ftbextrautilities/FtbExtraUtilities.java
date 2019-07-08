@@ -3,8 +3,6 @@ package net.dirtcraft.ftbextrautilities;
 import com.feed_the_beast.ftblib.lib.data.ForgePlayer;
 import com.feed_the_beast.ftblib.lib.data.ForgeTeam;
 import com.feed_the_beast.ftblib.lib.data.Universe;
-import com.google.inject.Inject;
-import org.slf4j.Logger;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
@@ -35,42 +33,31 @@ import java.util.UUID;
         }
 )
 public class FtbExtraUtilities {
-
-    private static FtbExtraUtilities instance;
-    @Inject
-    private Logger logger;
-
-    public static FtbExtraUtilities getInstance() {
-        return instance;
-    }
-
     @Listener
     public void onServerStart(GameStartedServerEvent event) {
-        instance = this;
         CommandSpec getId = CommandSpec.builder()
                 .arguments(GenericArguments.string(Text.of("name")))
                 .executor((src, args)->{
-                    //noinspection OptionalGetWithoutIsPresent
-                    String team = args.<String>getOne("name").get();
-                    if (team.equals("'")) {
-                        throw new CommandException( Text.of("invalid argumant!"));
-                    }
-                    if (team.contains("'")){
-                        String s = team.split("'")[0];
+                    if (!args.<String>getOne("name").isPresent()) throw new CommandException(Text.of("You need to specify a name."));
+                    String teamName = args.<String>getOne("name").get();
+                    if (teamName.equals("'")) throw new CommandException( Text.of("invalid argumant!"));
+                    if (teamName.contains("'")){
+                        String s = teamName.split("'")[0];
                         Optional<UserStorageService> userStorage = Sponge.getServiceManager().provide(UserStorageService.class);
+                        if (!userStorage.isPresent()) throw new CommandException(Text.of("Failed to retrieve user storage service!"));
                         Optional<User> user = userStorage.get().get(s);
-                        if (!user.isPresent()) {
-                            throw new CommandException (Text.of("Failed to find player!"));
-                        }
+                        if (!user.isPresent()) throw new CommandException (Text.of("Failed to find player!"));
+
                         UUID uuid = user.get().getUniqueId();
-                        ForgePlayer target = Universe.get().getPlayer(uuid);
-                        if (target == null) throw new CommandException (Text.of("Failed to find player"));
-                        src.sendMessage(Text.of(target.team.getID()));
+                        ForgePlayer teamLeader = Universe.get().getPlayer(uuid);
+                        if (teamLeader == null) throw new CommandException (Text.of("Failed to find player"));
+
+                        src.sendMessage(Text.of(teamLeader.team.getID()));
                     } else {
                         Collection<ForgeTeam> teams = Universe.get().getTeams();
-                        for (ForgeTeam t3am : teams) {
-                            if (t3am.getTitle().getUnformattedComponentText().equals(team))
-                                src.sendMessage(Text.of(t3am.getID()));
+                        for (ForgeTeam team : teams) {
+                            if (team.getTitle().getUnformattedComponentText().equals(teamName))
+                                src.sendMessage(Text.of(team.getID()));
                         }
                     }
                     return CommandResult.success();
@@ -80,20 +67,26 @@ public class FtbExtraUtilities {
         CommandSpec getPlayers = CommandSpec.builder()
                 .arguments(GenericArguments.string(Text.of("id")))
                 .executor((src,args)->{
-                    String team = args.<String>getOne("id").get();
-                    ForgeTeam fteam = Universe.get().getTeam(team);
-                    for (ForgePlayer p : fteam.getMembers()){
-                        src.sendMessage(Text.of(p.getName()));
+                    if (!args.<String>getOne("id").isPresent()) throw new CommandException(Text.of("You need to specify an ID."));
+                    String teamName = args.<String>getOne("id").get();
+                    ForgeTeam forgeTeam = Universe.get().getTeam(teamName);
+                    for (ForgePlayer p : forgeTeam.getMembers()){
+                        if (p == forgeTeam.owner){
+                            src.sendMessage(Text.of("Owner: "+p.getName()));
+                        } else {
+                            src.sendMessage(Text.of(p.getName()));
+                        }
                     }
                     return CommandResult.success();
                 })
                 .build();
 
         CommandSpec main = CommandSpec.builder()
+                .permission("ftbextrautilities.teams.view")
                 .child(getId, "getid", "id")
                 .child(getPlayers, "getplayers", "players")
-                //.executor(new main())
                 .build();
+
         Sponge.getCommandManager().register(this, main, "ftbteams");
     }
 }
